@@ -68,7 +68,8 @@ void fast_fib(uint64_t n, uint64_t res[])
 	uint64_t MOD = 1000000007;
 	uint64_t a,b,c,d;
 
-    if (n == 0) {
+    if (n == 0) 
+	{
         res[0] = 0;
         res[1] = 1;
         return;
@@ -81,14 +82,17 @@ void fast_fib(uint64_t n, uint64_t res[])
         c += MOD;
     c = (a * c) % MOD;
     d = (a * a + b * b) % MOD;
-    if (n % 2 == 0) {
+    if (n % 2 == 0) 
+	{
         res[0] = c;
         res[1] = d;
     }
-    else {
+    else 
+	{
         res[0] = d;
         res[1] = c + d;
     }
+	return;
 }
 
 
