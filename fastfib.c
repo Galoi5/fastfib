@@ -63,36 +63,40 @@ uint64_t	matrix_fib(uint64_t n)
 	return (arr[0][1]);
 }
 
-void fast_fib(uint64_t n, uint64_t res[])
+
+uint64_t fast_fib(uint64_t n)
 {
-	uint64_t MOD = 1000000007;
-	uint64_t a,b,c,d;
+	uint64_t	h = 0; //highest bot of n (most left)
+	uint64_t	mask;
 
-    if (n == 0) 
+	uint64_t	i = n;
+	while (i)
 	{
-        res[0] = 0;
-        res[1] = 1;
-        return;
-    }
-    fast_fib((n / 2), res);
-    a = res[0];
-    b = res[1];
-    c = 2 * b - a;
-    if (c < 0)
-        c += MOD;
-    c = (a * c) % MOD;
-    d = (a * a + b * b) % MOD;
-    if (n % 2 == 0) 
+		++h;
+		i>>=1;
+	}
+
+	uint64_t	a = 0;
+	uint64_t	b = 1;
+	uint64_t	c;
+	uint64_t	d;
+	mask = 1 << (h - 1);
+	while (mask)
 	{
-        res[0] = c;
-        res[1] = d;
-    }
-    else 
-	{
-        res[0] = d;
-        res[1] = c + d;
-    }
-	return;
+		c = a * (2 * b - a);
+		d = a * a + b * b;
+		if (mask & n)
+		{
+			a = d;
+			b = c + d;
+		} 
+		else
+		{
+			a = c;
+			b = d;
+		}
+		mask >>= 1;
+	}
+	return (a);
 }
-
 
