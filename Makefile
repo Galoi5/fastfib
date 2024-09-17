@@ -3,7 +3,7 @@ CC ?= gcc
 SRC_EXT = c
 SRC_PATH = .
 LIBS =
-COMPILE_FLAGS = -std=c99 -Wall -Wextra -g
+COMPILE_FLAGS = -std=c99 -Wall -Wextra -Werror -g
 RCOMPILE_FLAGS = -D NDEBUG
 DCOMPILE_FLAGS = -D DEBUG
 INCLUDES = -I $(SRC_PATH)
@@ -24,34 +24,28 @@ INSTALL = install
 INSTALL_PROGRAM = $(INSTALL)
 INSTALL_DATA = $(INSTALL) -m 644
 
-# Append pkg-config specific libraries if need be
 ifneq ($(LIBS),)
 	COMPILE_FLAGS += $(shell pkg-config --cflags $(LIBS))
 	LINK_FLAGS += $(shell pkg-config --libs $(LIBS))
 endif
 
-# Verbose option, to output compile and link commands
 export V := false
 export CMD_PREFIX := @
 ifeq ($(V),true)
 	CMD_PREFIX :=
 endif
 
-# Combine compiler and linker flags
 release: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(RCOMPILE_FLAGS)
 release: export LDFLAGS := $(LDFLAGS) $(LINK_FLAGS) $(RLINK_FLAGS)
 debug: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(DCOMPILE_FLAGS)
 debug: export LDFLAGS := $(LDFLAGS) $(LINK_FLAGS) $(DLINK_FLAGS)
 
-# Build and output paths
 release: export BUILD_PATH := build/release
 release: export BIN_PATH := bin/release
 debug: export BUILD_PATH := build/debug
 debug: export BIN_PATH := bin/debug
 install: export BIN_PATH := bin/release
 
-# Find all source files in the source directory, sorted by most
-# recently modified
 ifeq ($(UNAME_S),Darwin)
 	SOURCES = $(shell find $(SRC_PATH) -name '*.$(SRC_EXT)' | sort -k 1nr | cut -f2-)
 else
@@ -59,20 +53,16 @@ else
 						| sort -k 1nr | cut -f2-)
 endif
 
-# fallback in case the above fails
 rwildcard = $(foreach d, $(wildcard $1*), $(call rwildcard,$d/,$2) \
 						$(filter $(subst *,%,$2), $d))
 ifeq ($(SOURCES),)
 	SOURCES := $(call rwildcard, $(SRC_PATH), *.$(SRC_EXT))
 endif
 
-# Set the object file names, with the source directory stripped
-# from the path, and the build path prepended in its place
 OBJECTS = $(SOURCES:$(SRC_PATH)/%.$(SRC_EXT)=$(BUILD_PATH)/%.o)
-# Set the dependency files that will be used to add header dependencies
+
 DEPS = $(OBJECTS:.o=.d)
 
-# Macros for timing compilation
 ifeq ($(UNAME_S),Darwin)
 	CUR_TIME = awk 'BEGIN{srand(); print srand()}'
 	TIME_FILE = $(dir $@).$(notdir $@)_time
@@ -90,10 +80,7 @@ else
 		echo `date -u -d @$$st '+%H:%M:%S'`
 endif
 
-# Version macros
-# Comment/remove this section to remove versioning
 USE_VERSION := false
-# If this isn't a git repo or the repo has no tags, git describe will return non-zero
 ifeq ($(shell git describe > /dev/null 2>&1 ; echo $$?), 0)
 	USE_VERSION := true
 	VERSION := $(shell git describe --tags --long --dirty --always | \
@@ -113,7 +100,6 @@ ifeq ($(shell git describe > /dev/null 2>&1 ; echo $$?), 0)
 		-D VERSION_HASH=\"$(VERSION_HASH)\"
 endif
 
-# Standard, non-optimized release build
 .PHONY: release
 release: dirs
 ifeq ($(USE_VERSION), true)
@@ -126,7 +112,6 @@ endif
 	@echo -n "Total build time: "
 	@$(END_TIME)
 
-# Debug build for gdb debugging
 .PHONY: debug
 debug: dirs
 ifeq ($(USE_VERSION), true)
@@ -139,26 +124,22 @@ endif
 	@echo -n "Total build time: "
 	@$(END_TIME)
 
-# Create the directories used in the build
 .PHONY: dirs
 dirs:
 	@echo "Creating directories"
 	@mkdir -p $(dir $(OBJECTS))
 	@mkdir -p $(BIN_PATH)
 
-# Installs to the set path
 .PHONY: install
 install:
 	@echo "Installing to $(DESTDIR)$(INSTALL_PREFIX)/bin"
 	@$(INSTALL_PROGRAM) $(BIN_PATH)/$(BIN_NAME) $(DESTDIR)$(INSTALL_PREFIX)/bin
 
-# Uninstalls the program
 .PHONY: uninstall
 uninstall:
 	@echo "Removing $(DESTDIR)$(INSTALL_PREFIX)/bin/$(BIN_NAME)"
 	@$(RM) $(DESTDIR)$(INSTALL_PREFIX)/bin/$(BIN_NAME)
 
-# Removes all build files
 .PHONY: clean
 clean:
 	@echo "Deleting $(BIN_NAME) symlink"
@@ -167,13 +148,11 @@ clean:
 	@$(RM) -r build
 	@$(RM) -r bin
 
-# Main rule, checks the executable and symlinks to the output
 all: $(BIN_PATH)/$(BIN_NAME)
 	@echo "Making symlink: $(BIN_NAME) -> $<"
 	@$(RM) $(BIN_NAME)
 	@ln -s $(BIN_PATH)/$(BIN_NAME) $(BIN_NAME)
 
-# Link the executable
 $(BIN_PATH)/$(BIN_NAME): $(OBJECTS)
 	@echo "Linking: $@"
 	@$(START_TIME)
@@ -181,12 +160,8 @@ $(BIN_PATH)/$(BIN_NAME): $(OBJECTS)
 	@echo -en "\t Link time: "
 	@$(END_TIME)
 
-# Add dependency files, if they exist
 -include $(DEPS)
 
-# Source file rules
-# After the first compilation they will be joined with the rules from the
-# dependency files to provide header dependencies
 $(BUILD_PATH)/%.o: $(SRC_PATH)/%.$(SRC_EXT)
 	@echo "Compiling: $< -> $@"
 	@$(START_TIME)
