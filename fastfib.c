@@ -66,7 +66,7 @@ uint64_t	matrix_fib(uint64_t n)
 
 uint64_t fast_fib(uint64_t n)
 {
-	uint64_t	h = 0; //highest bot of n (most left)
+	uint64_t	h = 0; //highest bit of n (most left)
 	uint64_t	mask;
 
 	uint64_t	i = n;
